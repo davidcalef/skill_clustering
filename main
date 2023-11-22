@@ -1,0 +1,116 @@
+import numpy as np
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+import matplotlib.pyplot as plt
+import random
+
+# Step 1: Generate Mock Data
+def generate_mock_data(num_children, num_skills, max_age):
+    mock_data = []
+    for _ in range(num_children):
+        child_data = {'ChildID': _, 'Skills': {}}
+        for skill_id in range(num_skills):
+            age = random.randint(0, max_age)
+            child_data['Skills'][f'Skill_{skill_id + 1}'] = age
+        mock_data.append(child_data)
+    return mock_data
+
+# Step 2: Perform Hierarchical Single Link Clustering and Create a Dendrogram
+def perform_clustering(mock_data):
+    skill_data = np.array([list(child['Skills'].values()) for child in mock_data])
+    linkage_matrix = linkage(skill_data, method='single', metric='euclidean')
+    dendrogram(linkage_matrix)
+    plt.xlabel('Children')
+    plt.ylabel('Distance')
+    plt.title('Hierarchical Single-Link Clustering Dendrogram')
+    plt.show()
+    return linkage_matrix
+
+# Step 3a: Compare Child's Skill Acquisition Timeline with Cluster Patterns
+def compare_child_to_clusters(child_data, linkage_matrix, threshold=2.0):
+    child_skills = np.array(list(child_data['Skills'].values()))
+    child_cluster = fcluster(linkage_matrix, threshold, criterion='distance')
+    cluster_mean_age = np.mean(child_skills[child_cluster == child_cluster[0]])
+    
+    if np.mean(child_skills) < cluster_mean_age:
+        return "Advanced"
+    elif np.mean(child_skills) > cluster_mean_age:
+        return "Delayed"
+    else:
+        return "Typical"
+
+# Step 3b: Predict the Next Skill
+def predict_next_skill(child_data, linkage_matrix, threshold=2.0):
+    child_cluster = fcluster(linkage_matrix, threshold, criterion='distance')
+    cluster_children = [child for child in mock_data if fcluster(linkage_matrix, threshold, criterion='distance')[0] == child_cluster[0]]
+    
+    common_skills = set()
+    for other_child in cluster_children:
+        if other_child != child_data:
+            common_skills.update(set(other_child['Skills'].keys()) - set(child_data['Skills'].keys()))
+    
+    if common_skills:
+        next_skill = random.choice(list(common_skills))
+        return next_skill
+    else:
+        return "No prediction available"
+
+# Step 4a: Recommend Activities Based on Current Skillset and Developmental Pathways
+def recommend_activities(child_data, linkage_matrix, threshold=2.0):
+    child_cluster = fcluster(linkage_matrix, threshold, criterion='distance')
+    cluster_children = [child for child in mock_data if fcluster(linkage_matrix, threshold, criterion='distance')[0] == child_cluster[0]]
+    
+    common_skills = set()
+    for other_child in cluster_children:
+        if other_child != child_data:
+            common_skills.update(set(other_child['Skills'].keys()) - set(child_data['Skills'].keys()))
+    
+    if common_skills:
+        recommendations = [f"Activity to develop {skill}: ..." for skill in common_skills]
+        return recommendations
+    else:
+        return "No recommendations available"
+
+# Step 4b: Provide Tailored Activity Recommendations for Advanced or Delayed Development
+def tailored_activity_recommendations(child_data, linkage_matrix, threshold=2.0):
+    comparison_result = compare_child_to_clusters(child_data, linkage_matrix, threshold)
+    
+    if comparison_result == "Advanced":
+        return ["Your child's development is advanced. Consider challenging activities in areas of interest."]
+    elif comparison_result == "Delayed":
+        return ["Your child's development is delayed. Focus on activities to catch up in critical skills."]
+    else:
+        return []
+
+def main():
+    # Generate mock data
+    num_children = 10
+    num_skills = 5
+    max_age = 6
+    mock_data = generate_mock_data(num_children, num_skills, max_age)
+    
+    # Perform clustering and create dendrogram
+    linkage_matrix = perform_clustering(mock_data)
+    
+    # Example child data for analysis
+    child_data = mock_data[0]
+    
+    # Step 3a: Compare Child's Skill Acquisition Timeline with Cluster Patterns
+    comparison_result = compare_child_to_clusters(child_data, linkage_matrix)
+    print(f"Child's development is {comparison_result}.")
+    
+    # Step 3b: Predict the Next Skill
+    next_skill = predict_next_skill(child_data, linkage_matrix)
+    print(f"Predicted next skill for the child: {next_skill}")
+    
+    # Step 4a: Recommend Activities Based on Current Skillset and Developmental Pathways
+    activity_recommendations = recommend_activities(child_data, linkage_matrix)
+    for recommendation in activity_recommendations:
+        print(recommendation)
+    
+    # Step 4b: Provide Tailored Activity Recommendations for Advanced or Delayed Development
+    tailored_recommendations = tailored_activity_recommendations(child_data, linkage_matrix)
+    for recommendation in tailored_recommendations:
+        print(recommendation)
+
+if __name__ == "__main__":
+    main()
